@@ -7,8 +7,16 @@ the traps listed there, not a code problem.
 
 ## What you are integrating
 
-A single patch (`patches/glm5-v100-sm70.patch`) against a known upstream
-base, containing:
+Two equivalent routes onto a known upstream base (verified to produce
+byte-identical trees):
+
+- **Standalone files + glue patch** (recommended — the interesting code
+  stays reviewable as plain files): copy the four standalone files, then
+  apply `patches/glm5-v100-sm70-glue.patch`.
+- **One-shot**: apply `patches/glm5-v100-sm70-full.patch`, which contains
+  everything including the standalone files.
+
+The change set:
 
 - two new CUDA source files (`csrc/attention/sm70_mla_decode.cu`,
   `csrc/attention/sm70_attn_fp8.cu`) plus their op registrations
@@ -31,26 +39,43 @@ cd 1Cat-vLLM
 git checkout v1.2.1   # == commit 4e9fdbc807178baa3bc98a1a59af7af7d3b63131
 ```
 
-The patch was generated against exactly this commit and applies clean there.
+Both patches were generated against exactly this commit and apply clean
+there.
 
 ## Step 2 — apply
 
+Recommended route (standalone files + glue):
+
 ```bash
-git apply --check /path/to/release/patches/glm5-v100-sm70.patch   # must be silent
-git apply --stat  /path/to/release/patches/glm5-v100-sm70.patch   # review scope
-git apply         /path/to/release/patches/glm5-v100-sm70.patch
-cp -r /path/to/release/scripts/serve_glm.sh scripts_or_root_of_your_choice/
-cp /path/to/release/tools/replay_prompt.py .
+REL=/path/to/release
+cp $REL/csrc/attention/sm70_mla_decode.cu $REL/csrc/attention/sm70_attn_fp8.cu csrc/attention/
+cp $REL/vllm/v1/attention/backends/mla/prefill/sm70_triton.py \
+   vllm/v1/attention/backends/mla/prefill/
+cp $REL/tools/replay_prompt.py .
+git apply --check $REL/patches/glm5-v100-sm70-glue.patch   # must be silent
+git apply --stat  $REL/patches/glm5-v100-sm70-glue.patch   # review scope
+git apply         $REL/patches/glm5-v100-sm70-glue.patch
+cp $REL/scripts/serve_glm.sh scripts_or_root_of_your_choice/
 ```
+
+One-shot alternative (identical result):
+
+```bash
+git apply /path/to/release/patches/glm5-v100-sm70-full.patch
+cp /path/to/release/scripts/serve_glm.sh scripts_or_root_of_your_choice/
+```
+
+(The full patch already creates `replay_prompt.py` at the repo root — no
+separate copy needed on this route.)
 
 **If `git apply --check` fails** (you are on a newer upstream): do not
 force it. Instead:
 
 1. Read `patches/MANIFEST.md` — it describes every file's changes and their
    purpose, so you can re-apply hunks contextually.
-2. The three largest new files are provided as plain files in this release
-   (`csrc/attention/*.cu`, `vllm/.../prefill/sm70_triton.py`) — copy them
-   verbatim; only their *registration* hunks need contextual re-application.
+2. Copy the standalone files verbatim as above — they are new files with no
+   upstream counterpart, so they can never conflict; only the *glue* hunks
+   (registrations, wiring) need contextual re-application.
 3. Integrate in the dependency order of the "Staged bring-up" section below,
    validating each stage before the next. Every feature is env-gated, so a
    partially-integrated tree still runs.

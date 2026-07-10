@@ -1,10 +1,19 @@
 # Patch manifest
 
-Per-file description of everything in `glm5-v100-sm70.patch` (generated
-against upstream 1Cat-vLLM `v1.2.1`,
-commit `4e9fdbc807178baa3bc98a1a59af7af7d3b63131`). Use this to re-apply
-hunks contextually if the patch does not apply to your base, or to understand
-the change surface before applying it.
+Per-file description of the complete change set (generated against upstream
+1Cat-vLLM `v1.2.1`, commit `4e9fdbc807178baa3bc98a1a59af7af7d3b63131`). Two
+patch files carry it:
+
+- `glm5-v100-sm70-full.patch` — everything below in one `git apply`.
+- `glm5-v100-sm70-glue.patch` — everything EXCEPT the four standalone new
+  files (`csrc/attention/sm70_mla_decode.cu`,
+  `csrc/attention/sm70_attn_fp8.cu`,
+  `vllm/v1/attention/backends/mla/prefill/sm70_triton.py`,
+  `replay_prompt.py`), which you copy verbatim from this release instead.
+  Verified: the two routes produce byte-identical trees.
+
+Use this manifest to re-apply hunks contextually if a patch does not apply
+to your base, or to understand the change surface before applying it.
 
 **Cross-cutting summary:** almost everything is ADDITIVE behind
 `VLLM_SM70_*` env flags and/or `device_capability.major == 7` checks. The

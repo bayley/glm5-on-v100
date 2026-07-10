@@ -61,10 +61,22 @@ vllm/v1/attention/backends/mla/prefill/sm70_triton.py
                                     Dependency-free dense-MLA varlen prefill
                                     (streaming online-softmax, O(q_len*BLOCK)
                                     scratch) — the exact-reference fallback.
-patches/glm5-v100-sm70.patch        THE integration artifact: the complete
-                                    code diff vs upstream v1.2.1 (kernels,
-                                    Python plumbing, env flags, MTP/PP work,
-                                    bug fixes). Applies clean with git apply.
+reference/                          Read-only snapshots of the interesting
+                                    MODIFIED Python files (the SM70 indexer
+                                    machinery incl. TP key-sharding and the
+                                    NVLink/IPC shard merge, the sparse MLA
+                                    wiring, the custom-op wrappers) — for
+                                    browsing without opening a patch. See
+                                    reference/README.md.
+patches/glm5-v100-sm70-glue.patch   The vLLM integration glue: everything in
+                                    the diff EXCEPT the standalone files
+                                    above. Copy the standalone files to their
+                                    paths, apply this, done.
+patches/glm5-v100-sm70-full.patch   One-shot alternative: the complete diff
+                                    vs upstream v1.2.1 including the kernel
+                                    files. `git apply` this and you have our
+                                    exact tree (verified equivalent to
+                                    standalone-copies + glue patch).
 patches/MANIFEST.md                 Per-file description of every hunk in the
                                     patch — read this before applying.
 scripts/serve_glm.sh                The tuned production launch script, with
@@ -84,9 +96,10 @@ docs/GOTCHAS.md                     The distilled engineering log: every trap
                                     memory ceilings, numerics).
 ```
 
-The two `.cu` files and `sm70_triton.py` are also inside the patch; they are
-additionally provided as plain files because they are self-contained and
-useful to read (or port elsewhere) on their own.
+The split: everything self-contained and interesting lives as standalone
+files (`csrc/`, `vllm/`, `tools/`) or browsable snapshots (`reference/`);
+the glue patch carries only the vLLM-machinery changes. The full patch is
+the union, for anyone who just wants the whole tree in one `git apply`.
 
 ## The feature list (short form)
 
